@@ -1,6 +1,6 @@
 import os
 import random
-import math
+
 import pygame
 from os import listdir
 from os.path import isfile, join
@@ -13,35 +13,6 @@ FPS = 60
 PLAYER_VEL = 5
 
 window = pygame.display.set_mode((WIDTH, HEIGHT))
-
-
-def flip(sprites):
-    return [pygame.transform.flip(sprite, True, False) for sprite in sprites]
-
-
-def load_sprite_sheets(dir1, dir2, width, height, direction=False):
-    path = join("assets", dir1, dir2)
-    images = [f for f in listdir(path) if isfile(join(path, f))]
-
-    all_sprites = {}
-
-    for image in images:
-        sprite_sheet = pygame.image.load(join(path, image)).convert_alpha()
-
-        sprites = []
-        for i in range(sprite_sheet.get_width() // width):
-            surface = pygame.Surface((width, height), pygame.SRCALPHA, 32)
-            rect = pygame.Rect(i * width, 0, width, height)
-            surface.blit(sprite_sheet, (0, 0), rect)
-            sprites.append(pygame.transform.scale2x(surface))
-
-        if direction:
-            all_sprites[image.replace(".png", "") + "_right"] = sprites
-            all_sprites[image.replace(".png", "") + "_left"] = flip(sprites)
-        else:
-            all_sprites[image.replace(".png", "")] = sprites
-
-    return all_sprites
 
 
 def get_block(size):
@@ -69,7 +40,6 @@ class Player(pygame.sprite.Sprite):
         self.x_vel = 0
         self.y_vel = 0
         self.mask = pygame.mask.from_surface(self.image)
-        self.direction = "left"
         self.animation_count = 0
         self.fall_count = 0
         self.jump_count = 0
@@ -115,7 +85,6 @@ class Player(pygame.sprite.Sprite):
         self.jump_count = 0
 
     def hit_head(self):
-        self.count = 0
         self.y_vel *= -1
 
     def draw(self, win, offset_x):
@@ -296,28 +265,31 @@ def generate_platforms(objects, block_size, offset_x):
 
 def generate_enemies(objects, block_size, offset_x):
     """
-    Gera inimigos dinamicamente, aparecendo de cima ou da direita.
-    A frequência de spawn aumenta conforme o jogador avança.
+    Gera inimigos dinamicamente enquanto o jogador avança.
+    Garante que inimigos sejam gerados continuamente na área visível e futura.
     """
-    # Aumenta a frequência de spawn com base no progresso do jogador
-    progress_factor = max(1, offset_x // 500)  # Aumenta a dificuldade a cada 500 pixels
-    spawn_chance = random.randint(1, max(100 - progress_factor * 2, 10))  # Reduz o intervalo de spawn
+    # Define a área onde os inimigos devem ser gerados
+    spawn_area_start = offset_x + WIDTH  # Começa na borda direita da tela visível
+    spawn_area_end = spawn_area_start + WIDTH  # Gera inimigos um pouco além da tela visível
 
-    # Garante que inimigos sejam gerados continuamente
-    if spawn_chance <= 2:  # Aumenta a chance de spawn (ajustado dinamicamente)
-        spawn_type = random.choice(["top", "right"])  # Escolhe o tipo de spawn
+    # Conta o número de inimigos atualmente na tela
+    enemy_count = sum(1 for obj in objects if isinstance(obj, Enemy))
 
-        for _ in range(progress_factor):  # Gera múltiplos inimigos com base no progresso
+    # Gera inimigos apenas se houver menos de 10 na tela
+    if enemy_count < 10:  # Ajuste o número máximo de inimigos conforme necessário
+        for _ in range(3):  # Gera 3 inimigos por vez
+            spawn_type = random.choice(["top", "right"])  # Escolhe o tipo de spawn
+
             if spawn_type == "top":
                 # Spawn no topo da tela
-                x = random.randint(offset_x, offset_x + WIDTH - block_size)
+                x = random.randint(spawn_area_start, spawn_area_end)
                 y = -block_size  # Fora da tela, no topo
                 enemy = Enemy(x, y, block_size // 2, block_size // 2)  # Inimigo menor que os blocos
                 enemy.y_vel = 3  # Velocidade para descer
 
             elif spawn_type == "right":
                 # Spawn na direita, com a base rente ao chão
-                x = offset_x + WIDTH  # Ajusta para aparecer na borda direita da tela
+                x = random.randint(spawn_area_start, spawn_area_end)
                 y = HEIGHT - block_size  # Base do inimigo alinhada ao chão
                 enemy = Enemy(x, y - (block_size // 2), block_size // 2, block_size // 2)  # Ajusta a posição vertical
                 enemy.x_vel = -3  # Velocidade para a esquerda
