@@ -1,4 +1,5 @@
 import pygame
+import sys  # Importa o módulo sys
 from os.path import join
 
 from constants import HEIGHT, WIDTH
@@ -32,13 +33,13 @@ def show_menu(window):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
-                quit()
+                sys.exit()  # Substitui quit() por sys.exit()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:
                     run = False
                 if event.key == pygame.K_ESCAPE:
                     pygame.quit()
-                    quit()
+                    sys.exit()  # Substitui quit() por sys.exit()
 
     pygame.mixer.music.stop()
 
@@ -70,12 +71,12 @@ def show_game_over(window, score):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
-                quit()
+                sys.exit()  # Substitui quit() por sys.exit()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:
                     run = False
                 if event.key == pygame.K_ESCAPE:
                     pygame.quit()
-                    quit()
+                    sys.exit()  # Substitui quit() por sys.exit()
 
     pygame.mixer.music.stop()
