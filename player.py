@@ -18,8 +18,22 @@ class Player(pygame.sprite.Sprite):
         self.jump_count = 0
         self.hit = False
         self.hit_count = 0
-        self.lives = 3  # Número inicial de vidas
-        self.score = 0  # Pontuação do jogador
+        self.lives = 3  
+        self.score = 0  
+        self.is_attacking = False
+        self.attack_images = self.load_attack_images()
+        self.attack_frame = 0
+
+    def load_attack_images(self):
+        attack_images = []
+        player_width, player_height = self.image.get_size() 
+        for i in range(2, 14): 
+            img_path = join("assets-2", "attack", f"hit_{i}.png")
+            if isfile(img_path):
+                img = pygame.image.load(img_path).convert_alpha()
+                img = pygame.transform.scale(img, (int(player_width * 2.8), int(player_height * 1.2)))
+                attack_images.append(img)
+        return attack_images
 
     def jump(self):
         self.y_vel = -GRAVITY * 8
@@ -41,6 +55,12 @@ class Player(pygame.sprite.Sprite):
     def move_right(self, vel):
         self.x_vel = vel
 
+    def attack(self):
+        """Inicia o ataque."""
+        if not self.is_attacking:  # Evita reiniciar a animação no meio do ataque
+            self.is_attacking = True
+            self.attack_frame = 0
+
     def loop(self, fps):
         self.y_vel += min(1, (self.fall_count / fps) * GRAVITY)
         self.move(self.x_vel, self.y_vel)
@@ -50,6 +70,15 @@ class Player(pygame.sprite.Sprite):
         if self.hit_count > fps * 2:
             self.hit = False
             self.hit_count = 0
+
+        if self.is_attacking:
+            self.animation_count += 1
+            if self.animation_count >= fps // 10:  # Controla a velocidade da animação
+                self.animation_count = 0
+                self.attack_frame += 1
+                if self.attack_frame >= len(self.attack_images):
+                    self.is_attacking = False  # Finaliza o ataque
+                    self.attack_frame = 0
 
         self.fall_count += 1
 
@@ -62,7 +91,14 @@ class Player(pygame.sprite.Sprite):
         self.y_vel *= -1
 
     def draw(self, win, offset_x):
-        win.blit(self.image, (self.rect.x - offset_x, self.rect.y))
+        if self.is_attacking:
+            # Obtém a imagem de ataque atual
+            attack_image = self.attack_images[self.attack_frame]
+            attack_rect = attack_image.get_rect(midbottom=self.rect.midbottom)  # Alinha a base da imagem com o chão
+            win.blit(attack_image, (attack_rect.x - offset_x, attack_rect.y))
+        else:
+            win.blit(self.image, (self.rect.x - offset_x, self.rect.y))
+
 
 def handle_move(player, objects):
     keys = pygame.key.get_pressed()
@@ -72,7 +108,8 @@ def handle_move(player, objects):
     collide_right = handle_horizontal_collision(player, objects, PLAYER_VEL * 2)
 
     if (keys[pygame.K_LEFT] or keys[pygame.K_a]) and not collide_left:
-        player.move_left(PLAYER_VEL)
+        if player.rect.x > 0:
+            player.move_left(PLAYER_VEL)
     if (keys[pygame.K_RIGHT] or keys[pygame.K_d]) and not collide_right:
         player.move_right(PLAYER_VEL)
 

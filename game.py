@@ -17,8 +17,7 @@ def game_start(window):
     pygame.mixer.music.play(-1)
 
     block_size = 96
-    player = Player(100, 100, 50, 50)
-
+    player = Player(0, 100, 50, 50)  # Posiciona o jogador no limite esquerdo
 
     floor = [Block(i * block_size, HEIGHT - block_size, block_size)
              for i in range(-WIDTH // block_size, (WIDTH * 2) // block_size)]
@@ -47,17 +46,16 @@ def game_start(window):
                 if event.key == pygame.K_ESCAPE:
                     run = False
                     return
+                if event.key == pygame.K_RCTRL:  # Detecta o ataque
+                    player.attack()
 
         player.loop(FPS)
         handle_move(player, objects)
 
-
         player.score = (current_time - game_start_time) // 1000  # 1 ponto por segundo
 
         generate_floor(objects, block_size, offset_x)
-
         generate_platforms(objects, block_size, offset_x)
-
         generate_enemies(objects, block_size, offset_x)
 
         game_over = check_collisions(player, objects)
@@ -65,7 +63,6 @@ def game_start(window):
             run = False
 
         objects = [obj for obj in objects if not (isinstance(obj, Enemy) and obj.is_off_screen())]
-
         objects = [obj for obj in objects if not (isinstance(obj, Block) and obj.rect.right < offset_x - WIDTH)]
 
         for obj in objects:
@@ -81,9 +78,7 @@ def game_start(window):
             offset_x += player.x_vel
 
         draw(window, background, bg_image, player, objects, offset_x)
-
         draw_lives(window, player.lives)
-
         draw_score(window, player.score)
 
         pygame.display.update()
